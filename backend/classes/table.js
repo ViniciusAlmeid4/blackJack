@@ -1,6 +1,7 @@
-class Table {
-    constructor(wss, clients = new Map(), line = new Map(), order = []) {
+export class Table {
+    constructor(clients, dealer, line = new Map(), order = []) {
         this.clients = clients; // currently playing
+        this.dealer = dealer;
         this.line = line; // waiting line
         this.playing = false;
         this.turn = 0;
@@ -14,29 +15,35 @@ class Table {
         this.line.clear();
 
         this.playing = true;
-
+        this.dealer.startDealer();
         this.order = [];
         this.clients.keys().forEach((players) => {
             this.order.push(players);
         });
+        console.log("dealer: " + this.dealer.cards);
+        for (const [name, ws] of this.clients.entries()) {
+            ws.cards = this.dealer.giveInitialCards();
+            console.log(name + ": " + ws.cards);
+        }
         console.log("Game started with players:", [...this.clients.keys()]);
     }
 
     addPlayer(name, ws) {
         ws.name = name;
+        ws.cards = [];
         ws.confirmed = false;
         if (this.playing) {
             this.line.set(name, ws);
-            return 'queue';
+            return "queue";
         } else {
             this.clients.set(name, ws);
-            return 'table';
+            return "table";
         }
     }
 
     confirmPlayer(name) {
         const ws = this.clients.get(name);
-        if (!ws) {
+        if (!ws || this.playing) {
             return;
         }
         ws.confirmed = true;
@@ -49,10 +56,16 @@ class Table {
     }
 
     passTurn() {
-        turn++;
-        if (turn >= order.length) {
-            turn = 0;
+        this.turn++;
+        if (this.turn >= this.order.length) {
+            this.turn = 0;
+            this.line = [];
+            console.log('entra o dealer');
         }
+    }
+
+    currentTurn() {
+        return this.order[this.turn];
     }
 
     removePlayer() {
@@ -68,5 +81,3 @@ class Table {
         }
     }
 }
-
-export default Table;

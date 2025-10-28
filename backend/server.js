@@ -56,7 +56,7 @@ wss.on("connection", (ws, req) => {
                 ws.send(
                     JSON.stringify({
                         type: "hit",
-                        card: { value: card.valor, suit: card.naipe },
+                        card: { value: card.value, suit: card.suit },
                     })
                 );
                 break;
@@ -88,7 +88,7 @@ wss.on("connection", (ws, req) => {
     });
 
     ws.on("close", () => {
-        table.removePlayer(ws.name);
+        table.removePlayer(ws);
         broadcast(
             JSON.stringify({
                 type: "userRemoved",

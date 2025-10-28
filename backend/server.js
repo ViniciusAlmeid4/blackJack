@@ -35,7 +35,12 @@ wss.on("connection", (ws, req) => {
     );
 
     ws.on("message", (msg) => {
-        const json = JSON.parse(msg);
+        let json = null;
+        try {
+            json = JSON.parse(msg);
+        } catch ($e) {
+            return;
+        }
 
         switch (json.type) {
             case "hit":
@@ -64,7 +69,7 @@ wss.on("connection", (ws, req) => {
                     console.log(`not ${ws.name}'s turn, awaitin for ${table.currentTurn()}`);
                     return;
                 }
-                console.log(ws.name + ': stands with ' + ws.cards);
+                console.log(ws.name + ": stands with " + ws.cards);
                 table.passTurn();
                 break;
             case "confirm":
@@ -77,12 +82,7 @@ wss.on("connection", (ws, req) => {
                 );
                 break;
             default:
-                if (ws.name !== table.order[turn]) {
-                    ws.send("não é sua vez");
-                    return;
-                }
-
-                ws.send("Jogou e passou para o proximo");
+                ws.send("ação inválida.");
                 break;
         }
     });

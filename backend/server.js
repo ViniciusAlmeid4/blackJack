@@ -11,9 +11,9 @@ const dealer = new Dealer(clients);
 
 const table = new Table(clients, dealer);
 
-function broadcast(message) {
+function broadcast(message, ignoreClient = null) {
     wss.clients.forEach((client) => {
-        if (client.readyState === client.OPEN) {
+        if (client.readyState === client.OPEN && client !== ignoreClient) {
             client.send(message);
         }
     });
@@ -21,8 +21,13 @@ function broadcast(message) {
 
 wss.on("connection", (ws, req) => {
     const { query } = parse(req.url, true);
+    if (!query.name) {
+        ws.close();
+        return;
+    }
     if (table.clients.has(query.name)) {
         ws.close(4001, "User name already in use");
+        return;
     }
 
     const place = table.addPlayer(query.name, ws);
@@ -52,11 +57,12 @@ wss.on("connection", (ws, req) => {
                     console.log(`not ${ws.name}'s turn, awaitin for ${table.currentTurn()}`);
                     return;
                 }
-                const card = dealer.hit(ws.name);
-                ws.send(
+                const card = table.dealer.hit(ws.name);
+                broadcast(
                     JSON.stringify({
                         type: "hit",
                         card: { value: card.value, suit: card.suit },
+                        name: ws.name,
                     })
                 );
                 break;
@@ -69,20 +75,44 @@ wss.on("connection", (ws, req) => {
                     console.log(`not ${ws.name}'s turn, awaitin for ${table.currentTurn()}`);
                     return;
                 }
-                console.log(ws.name + ": stands with " + ws.cards);
                 table.passTurn();
-                break;
-            case "confirm":
-                table.confirmPlayer(ws.name);
                 broadcast(
                     JSON.stringify({
-                        type: "userConfirmed",
+                        type: "stand",
                         name: ws.name,
                     })
                 );
                 break;
+            case "bid":
+                break;
+            case "confirm":
+                if (table.playing) {
+                    console.log("table already in game");
+                    return;
+                }
+                if (table.confirmPlayer(ws.name)) {
+                    broadcast(
+                        JSON.stringify({
+                            type: "userConfirmed",
+                            name: ws.name,
+                        })
+                    );
+                }
+                if (table.checkForStart()) {
+                    table.startGame();
+                    broadcast(
+                        JSON.stringify({
+                            type: "gameStarted",
+                        })
+                    );
+                }
+                break;
             default:
-                ws.send("ação inválida.");
+                ws.send(
+                    JSON.stringify({
+                        type: "invalidAction",
+                    })
+                );
                 break;
         }
     });

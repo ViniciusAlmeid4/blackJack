@@ -1,7 +1,7 @@
 import { Pack } from "./pack.js";
 
 export class Dealer {
-    constructor(clients) {
+    constructor(clients = new Map()) {
         this.pack = new Pack();
         this.players = clients;
         this.cards = [];
@@ -25,21 +25,27 @@ export class Dealer {
         return card;
     }
 
+    bid(ammount, name) {
+        ws = this.players.get(name);
+        ws.stack -= ammount;
+        ws.bid = ammount;
+    }
+
     calculateScore(cards) {
         let total = 0;
         let ases = 0;
 
         for (const card of cards) {
-            if (["J", "Q", "K"].includes(card.value)){
+            if (["J", "Q", "K"].includes(card.value)) {
                 total += 10;
-            } else if (card.naipe === "A") {
+            } else if (card.value === "A") {
                 total += 11;
                 ases++;
             } else {
                 total += parseInt(card.value);
             }
         }
-        
+
         while (total > 21 && ases > 0) {
             total -= 10;
             ases--;

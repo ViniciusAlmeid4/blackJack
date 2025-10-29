@@ -9,12 +9,6 @@ export class Table {
     }
 
     startGame() {
-        for (const [name, ws] of this.line.entries()) {
-            this.clients.set(name, ws);
-        }
-
-        this.line.clear();
-
         this.playing = true;
         this.dealer.startDealer();
         this.order = [];
@@ -32,6 +26,8 @@ export class Table {
         ws.name = name;
         ws.cards = [];
         ws.confirmed = false;
+        ws.stack = 500.0;
+        ws.bid = 0;
         if (this.playing) {
             this.line.set(name, ws);
             return "queue";
@@ -44,22 +40,24 @@ export class Table {
     confirmPlayer(name) {
         const ws = this.clients.get(name);
         if (!ws || this.playing) {
-            return;
+            return false;
         }
         ws.confirmed = true;
+    }
+
+    checkForStart() {
         for (const [name, ws] of this.clients.entries()) {
             if (ws.confirmed == false) {
-                return;
+                return false;
             }
         }
-        this.startGame();
+        return true;
     }
 
     passTurn() {
         this.turn++;
         if (this.turn >= this.order.length) {
             this.turn = 0;
-            this.line = [];
             while (this.dealer.calculateScore(this.dealer.cards) < 16) {
                 const card = this.dealer.pack.pullCard();
                 console.log("Dealer hit: " + card);
@@ -67,8 +65,11 @@ export class Table {
             }
             for (const [name, ws] of this.clients.entries()) {
                 console.log(name + " had: " + this.dealer.calculateScore(ws.cards));
+                console.log(name + " had: " + ws.cards);
             }
             console.log("dealer ended with: " + this.dealer.calculateScore(this.dealer.cards));
+            console.log("dealer ended with: " + this.dealer.cards);
+            this.endGame();
         }
     }
 
@@ -86,6 +87,16 @@ export class Table {
         this.playing = false;
         for (const [name, ws] of this.clients.entries()) {
             ws.confirmed = false;
+            ws.cards = [];
         }
+        this.dealer.cards = [];
+
+        for (const [name, ws] of this.line.entries()) {
+            this.clients.set(name, ws);
+            console.log(`${name} entrou no jogo`);
+        }
+        this.line.clear();
+
+        // TODO adicionar função de resetar o baralho
     }
 }

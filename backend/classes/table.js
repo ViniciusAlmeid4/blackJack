@@ -98,5 +98,14 @@ export class Table {
         this.line.clear();
 
         // TODO adicionar função de resetar o baralho
+        this.resetDeck();
+    }
+
+    resetDeck() {
+        if (this.dealer && this.dealer.pack) {
+            this.dealer.pack = new this.dealer.pack.constructor();
+            this.dealer.cards = [];
+            console.log("Fim de rodada.");
+        }
     }
 }

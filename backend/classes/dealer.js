@@ -8,6 +8,16 @@ export class Dealer {
         this.hiddenCard = null;
     }
 
+    broadcast(message) {
+        try {
+            for (const [name, ws] of this.players.entries()) {
+                ws.send(message);
+            }
+        } catch (e) {
+            return;
+        }
+    }
+
     startDealer() {
         this.cards = [this.pack.pullCard(), this.pack.pullCard()];
     }
@@ -17,16 +27,19 @@ export class Dealer {
         return cards;
     }
 
-    hit(name) {
+    hit(ws) {
         const card = this.pack.pullCard();
-        const player = this.players.get(name);
-        player.cards.push(card);
-        console.log(name + " hit: " + card);
-        return card;
+        ws.cards.push(card);
+        this.broadcast(
+            JSON.stringify({
+                type: "hit",
+                card: { value: card.value, suit: card.suit },
+                name: ws.name,
+            })
+        );
     }
 
-    bid(ammount, name) {
-        ws = this.players.get(name);
+    bid(ammount, ws) {
         ws.stack -= ammount;
         ws.bid = ammount;
     }
@@ -52,5 +65,10 @@ export class Dealer {
         }
 
         return total;
+    }
+
+    resetPack() {
+        this.pack = new this.pack.constructor();
+        this.cards = [];
     }
 }

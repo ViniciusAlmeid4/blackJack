@@ -1,28 +1,18 @@
 export class Card {
-    constructor(valor, naipe) {
-        this.value = valor;
-        this.suit = naipe;
-    }
-
-    getValorBlackjack() {
-        if (["J", "Q", "K"].includes(this.value)) {
-            return 10;
-        } else if (this.value === "A") {
-            return 11;
-        } else {
-            return parseInt(this.valor);
-        }
+    constructor(value, suit) {
+        this.value = value;
+        this.suit = suit;
     }
 
     toString() {
-        return `${this.value} de ${this.suit}`;
+        return `${this.value} of ${this.suit}`;
     }
 }
 
 export class Pack {
     constructor() {
         const values = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
-        const suites = ["Copas", "Ouros", "Espadas", "Paus"];
+        const suites = ["Hearts", "Diamonds", "Spades", "Clubs"];
 
         this.cards = [];
 

@@ -97,7 +97,50 @@ wss.on("connection", (ws, req) => {
                 table.passTurn(ws);
                 break;
             case "bid":
+                if (table.playing) {
+                    ws.send(
+                        JSON.stringify({
+                            type: "error",
+                            code: 3,
+                            message: "table already in game, cannot bid",
+                        })
+                    );
+                    return;
+                }
+
+                const bidAmount = json.amount;
+                if (!bidAmount || typeof bidAmount !== 'number' || bidAmount <= 0 || !Number.isInteger(bidAmount)) {
+                    ws.send(
+                        JSON.stringify({
+                            type: "error",
+                            code: 5,
+                            message: "invalid bid amount, must be a positive integer",
+                        })
+                    );
+                    return;
+                }
+
+                try {
+                    table.placeBid(ws.name, bidAmount);
+
+                    broadcast(
+                        JSON.stringify({
+                            type: "playerBid",
+                            name: ws.name,
+                            amount: bidAmount
+                        })
+                    );
+                } catch (e) {
+                    ws.send(
+                        JSON.stringify({
+                            type: "error",
+                            code: 6,
+                            message: e.message || "bid rejected by table",
+                        })
+                    );
+                }
                 break;
+
             case "confirm":
                 if (table.playing) {
                     ws.send(

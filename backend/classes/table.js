@@ -48,7 +48,7 @@ export class Table {
         ws.name = name;
         ws.cards = [];
         ws.confirmed = false;
-        ws.stack = 500.0;
+        ws.stack = 1000.0;
         ws.bid = 0;
         let place = "";
         if (this.playing) {
@@ -96,6 +96,29 @@ export class Table {
         }
         ws.confirmed = true;
     }
+
+    placeBid(playerName, amount) {
+        const ws = this.clients.get(playerName);
+        if (!ws) {
+            throw new Error("Player not found.");
+        }
+
+        if (this.playing) {
+            throw new Error("Cannot place bid, game is already in progress.");
+        }
+
+        if (ws.bid > 0) {
+            throw new Error("You have already placed a bid for this round.");
+        }
+
+        if (amount > ws.stack) {
+            throw new Error(`Insufficient funds. Your stack is ${ws.stack}.`);
+        }
+
+        ws.stack -= amount;
+        ws.bid = amount;
+    }
+
 
     checkForStart() {
         for (const [name, ws] of this.clients.entries()) {
@@ -182,6 +205,7 @@ export class Table {
         for (const [name, ws] of this.clients.entries()) {
             ws.confirmed = false;
             ws.cards = [];
+            ws.bid = 0;
             ws.send(
                 JSON.stringify({
                     type: "gameEnded",

@@ -197,6 +197,7 @@ export class Table {
                         score,
                         name: sender,
                         won,
+                        currentStack: sws.stack
                     })
                 );
             }

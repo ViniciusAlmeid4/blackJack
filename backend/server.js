@@ -109,7 +109,7 @@ wss.on("connection", (ws, req) => {
                 }
 
                 const bidAmount = json.amount;
-                if (!bidAmount || typeof bidAmount !== 'number' || bidAmount <= 0 || !Number.isInteger(bidAmount)) {
+                if (!bidAmount || typeof bidAmount !== "number" || bidAmount <= 0 || !Number.isInteger(bidAmount)) {
                     ws.send(
                         JSON.stringify({
                             type: "error",
@@ -127,7 +127,7 @@ wss.on("connection", (ws, req) => {
                         JSON.stringify({
                             type: "playerBid",
                             name: ws.name,
-                            amount: bidAmount
+                            amount: bidAmount,
                         })
                     );
                 } catch (e) {
@@ -148,6 +148,16 @@ wss.on("connection", (ws, req) => {
                             type: "error",
                             code: 3,
                             message: "table already in game",
+                        })
+                    );
+                    return;
+                }
+                if (ws.bid <= 0) {
+                    ws.send(
+                        JSON.stringify({
+                            type: "error",
+                            code: 7,
+                            message: "can't confirm without placing a bid!!",
                         })
                     );
                     return;

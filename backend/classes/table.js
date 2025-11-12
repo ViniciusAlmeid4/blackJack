@@ -42,6 +42,7 @@ export class Table {
                 })
             );
         }
+        // send do primeiro na vez this.order[0]
     }
 
     addPlayer(name, ws) {
@@ -144,6 +145,7 @@ export class Table {
                 name: ws.name,
             })
         );
+        // adicionar de quem é a vez atual (não sei onde fica) this.order[this.turn]
         if (this.turn >= this.order.length) {
             this.turn = 0;
             while (this.dealer.calculateScore(this.dealer.cards) < 16) {

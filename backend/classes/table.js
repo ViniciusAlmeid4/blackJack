@@ -25,13 +25,16 @@ export class Table {
         this.clients.keys().forEach((players) => {
             this.order.push(players);
         });
+
         this.broadcast(
             JSON.stringify({
                 type: "startHand",
                 cards: this.dealer.cards[0],
                 name: "dealer",
+                score: this.dealer.calculateScore([this.dealer.cards[0]])
             })
         );
+
         for (const [name, ws] of this.clients.entries()) {
             ws.cards = this.dealer.giveInitialCards();
             this.broadcast(
@@ -39,6 +42,7 @@ export class Table {
                     type: "startHand",
                     cards: ws.cards,
                     name,
+                    score: this.dealer.calculateScore(ws.cards)
                 })
             );
         }
@@ -165,18 +169,21 @@ export class Table {
 
         if (this.turn >= this.order.length) {
             this.turn = 0;
-
             this.broadcast(JSON.stringify({ type: "turn", name: "dealer" }));
 
             while (this.dealer.calculateScore(this.dealer.cards) < 16) {
                 const card = this.dealer.pack.pullCard();
                 this.dealer.cards.push(card);
+                
+                const dealerScore = this.dealer.calculateScore(this.dealer.cards);
+
                 for (const [name, ws] of this.clients.entries()) {
                     ws.send(
                         JSON.stringify({
                             type: "hit",
                             card: { value: card.value, suit: card.suit },
                             name: "dealer",
+                            score: dealerScore
                         })
                     );
                 }
@@ -198,6 +205,7 @@ export class Table {
     endGame() {
         this.playing = false;
         const dealerScore = this.dealer.calculateScore(this.dealer.cards);
+
         for (const [name, ws] of this.clients.entries()) {
             ws.send(
                 JSON.stringify({
@@ -208,17 +216,29 @@ export class Table {
                 })
             );
         }
+
         for (const [sender, sws] of this.clients.entries()) {
-            const score = this.dealer.calculateScore(sws.cards);
-            const won = score <= 21 && (dealerScore > 21 || score > dealerScore);
+            const playerScore = this.dealer.calculateScore(sws.cards);
+            let result = "LOSE";
+
+            if (playerScore <= 21) {
+                if (dealerScore > 21 || playerScore > dealerScore) {
+                    result = "WIN";
+                    sws.stack += (sws.bid * 2);
+                } else if (playerScore === dealerScore) {
+                    result = "PUSH";
+                    sws.stack += sws.bid;
+                }
+            }
+
             for (const [reciever, rws] of this.clients.entries()) {
                 rws.send(
                     JSON.stringify({
                         type: "showDown",
                         cards: sws.cards,
-                        score,
+                        score: playerScore,
                         name: sender,
-                        won,
+                        result: result,
                         currentStack: sws.stack
                     })
                 );

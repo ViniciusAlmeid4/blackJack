@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blackjack Multiplayer Pro</title>
+    <style>
+        /* --- RESET E BASE --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background-color: #111; /* Chão escuro */
+            background-image: radial-gradient(#222 10%, #000 90%);
+            color: white; 
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .hidden { display: none !important; }
+
+        /* --- TELA DE LOGIN --- */
+        #login-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 2000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px;
+        }
+        input { padding: 15px; border-radius: 30px; border: 2px solid #444; background: #222; color: white; font-size: 18px; text-align: center; outline: none;}
+        input:focus { border-color: #f1c40f; }
+        
+        /* --- BOTÕES --- */
+        button { 
+            padding: 12px 30px; cursor: pointer; border-radius: 30px; border: none; 
+            font-weight: bold; font-size: 14px; text-transform: uppercase; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: 0.2s;
+        }
+        button:hover:not(:disabled) { transform: translateY(-3px); filter: brightness(1.2); }
+        button:active:not(:disabled) { transform: translateY(1px); }
+        button:disabled { background-color: #444 !important; color: #888; cursor: not-allowed; transform: none; box-shadow: none;}
+        
+        .btn-green { background: linear-gradient(to bottom, #2ecc71, #27ae60); color: white; }
+        .btn-blue { background: linear-gradient(to bottom, #3498db, #2980b9); color: white; }
+        .btn-red { background: linear-gradient(to bottom, #e74c3c, #c0392b); color: white; }
+        .btn-gold { background: linear-gradient(to bottom, #f1c40f, #f39c12); color: #2c3e50; }
+
+        /* --- A MESA (OVAL) --- */
+        #poker-table {
+            width: 95%;
+            max-width: 1400px;
+            height: 75vh; /* Ocupa 75% da altura da tela */
+            background-color: #2e7d32;
+            /* Efeito de Feltro Realista */
+            background-image: radial-gradient(50% 50% at 50% 50%, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0.1) 100%), 
+                              repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.03) 10px, rgba(0,0,0,0.03) 20px);
+            border: 15px solid #5d4037; /* Borda de Madeira */
+            border-radius: 300px; /* Formato Oval */
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.8), 0 20px 50px rgba(0,0,0,0.5);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* Dealer no topo, Players embaixo */
+            padding: 20px;
+            margin-bottom: 80px; /* Espaço para controles */
+        }
+
+        /* Logo Central / Status Global */
+        #center-logo {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            opacity: 0.8;
+            pointer-events: none;
+        }
+        #global-status {
+            font-size: 1.5em; font-weight: bold; color: #f1c40f; 
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.4);
+            padding: 10px 20px;
+            border-radius: 20px;
+        }
+        .table-label { font-size: 3em; font-weight: 900; color: rgba(0,0,0,0.2); letter-spacing: 5px; margin-top: -60px; display: block;}
+
+        /* Área do Dealer */
+        #dealer-area {
+            display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10;
+        }
+        .dealer-badge { background: #222; color: #aaa; padding: 4px 10px; border-radius: 10px; font-size: 0.8em; margin-bottom: 5px; border: 1px solid #555;}
+
+        /* Área dos Jogadores */
+        #players-container {
+            display: flex; justify-content: center; align-items: flex-end; 
+            gap: 20px; flex-wrap: wrap; z-index: 10;
+            min-height: 200px;
+        }
+
+        /* Assento Individual */
+        .seat {
+            background: rgba(0,0,0,0.6);
+            border-radius: 15px;
+            padding: 15px;
+            width: 160px; /* Um pouco maior */
+            display: flex; flex-direction: column; align-items: center;
+            border: 2px solid #444;
+            transition: all 0.3s ease;
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .seat.active-turn {
+            border-color: #f1c40f;
+            background: rgba(241, 196, 15, 0.15);
+            box-shadow: 0 0 25px rgba(241, 196, 15, 0.6);
+            transform: scale(1.05) translateY(-10px);
+        }
+        
+        .seat-info { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.85em;}
+        .seat-name { font-weight: bold; color: white; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
+        .seat-stack { color: #2ecc71; font-weight: bold;}
+        .seat-score { font-size: 0.9em; color: #ffd54f; font-weight: bold; margin-top: 5px; min-height: 20px;}
+
+        /* Cartas */
+        .cards-row { display: flex; justify-content: center; height: 90px; margin-top: 5px; padding-left: 10px;}
+        .card {
+            background: white; color: black; 
+            width: 55px; height: 80px; 
+            border-radius: 6px; 
+            display: flex; justify-content: center; align-items: center;
+            font-weight: bold; font-size: 18px; 
+            box-shadow: -3px 0 6px rgba(0,0,0,0.4);
+            margin-left: -25px; /* Sobreposição maior */
+            transition: margin 0.2s;
+            position: relative;
+        }
+        .card:first-child { margin-left: 0; }
+        .card:hover { margin-left: -5px; margin-right: 20px; z-index: 50; transform: translateY(-10px);} 
+        .card.red { color: #c0392b; }
+
+        /* --- BARRA DE CONTROLES (FIXA EM BAIXO) --- */
+        #controls-bar {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: linear-gradient(to top, #111, #222);
+            border-top: 4px solid #f1c40f;
+            padding: 15px; display: flex; justify-content: center; align-items: center; gap: 30px;
+            z-index: 500; height: 90px; box-shadow: 0 -10px 30px rgba(0,0,0,0.8);
+        }
+
+        #log-overlay {
+            position: absolute; top: 20px; right: 20px; width: 280px; max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.7); font-size: 13px; padding: 10px;
+            border-radius: 10px; 
+            pointer-events: auto;
+            color: #ddd; border: 1px solid #444;
+            z-index: 100;
+        }
+
+        #log-overlay::-webkit-scrollbar { width: 8px; }
+        #log-overlay::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        #log-overlay::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+        #log-overlay::-webkit-scrollbar-thumb:hover { background: #888; }
+
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <h1 style="font-size: 3em; color: #f1c40f; text-shadow: 0 4px 10px black;">♠️ CASINO BLACKJACK ♦️</h1>
+        <p style="color: #aaa;">Sente-se na mesa para jogar</p>
+        <input type="text" id="usernameInput" placeholder="Seu Apelido" />
+        <button class="btn-green" onclick="connectGame()" style="font-size: 1.2em; padding: 15px 40px;">ENTRAR</button>
+    </div>
+
+    <div id="log-overlay"></div>
+
+    <div id="poker-table" class="hidden">
+        
+        <div id="center-logo">
+            <span class="table-label">BLACKJACK</span>
+            <div id="global-status">Aguardando...</div>
+        </div>
+
+        <div id="dealer-area">
+            <div class="dealer-badge">DEALER</div>
+            <div class="cards-row" id="dealer-cards"></div>
+            <div id="dealer-score" style="color: #aaa; font-size: 0.8em; margin-top: 5px;"></div>
+        </div>
+
+        <div id="players-container">
+            </div>
+
+    </div>
+
+    <div id="controls-bar" class="hidden">
+        
+        <div id="phase-betting" class="hidden" style="display: flex; gap: 15px; align-items: center;">
+            <span style="color:#aaa; font-weight: bold;">SUA APOSTA: $</span>
+            <input type="number" id="bidAmount" value="100" style="width: 100px; padding: 10px; font-size: 1.2em;" />
+            <button class="btn-blue" onclick="placeBid()">APOSTAR</button>
+            <button class="btn-green" id="btnReady" onclick="confirmReady()" disabled>ESTOU PRONTO</button>
+        </div>
+
+        <div id="phase-action" class="hidden" style="display: flex; gap: 20px;">
+            <div style="text-align: right; margin-right: 10px;">
+                <div style="font-size: 0.8em; color: #aaa;">SUA VEZ</div>
+                <div style="font-weight: bold; font-size: 1.2em; color: white;">O QUE FAZER?</div>
+            </div>
+            <button class="btn-gold" id="btnHit" onclick="sendAction('hit')">➕ PEDIR CARTA</button>
+            <button class="btn-red" id="btnStand" onclick="sendAction('stand')">🛑 PARAR</button>
+        </div>
+
+    </div>
+
+    <script>
+        let socket;
+        let myName = "";
+
+        //mudar o ip conforme nova conexão
+        const ip = "10.1.1.67"
+        
+        const suitIcons = { "Hearts": "♥", "Diamonds": "♦", "Spades": "♠", "Clubs": "♣" };
+        const suitColor = { "Hearts": "red", "Diamonds": "red", "Spades": "black", "Clubs": "black" };
+
+        function connectGame() {
+            const val = document.getElementById('usernameInput').value.trim();
+            if(!val) return alert("Digite um nome válido");
+            myName = val;
+
+            socket = new WebSocket(`ws://${ip}:8080?name=${encodeURIComponent(myName)}`);
+
+            socket.onopen = () => {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('poker-table').classList.remove('hidden');
+                document.getElementById('controls-bar').classList.remove('hidden');
+                toggleControls('betting');
+            };
+
+            socket.onmessage = (evt) => {
+                const data = JSON.parse(evt.data);
+                processMessage(data);
+            };
+
+            socket.onerror = (e) => log("Erro de conexão");
+            socket.onclose = () => alert("Desconectado!");
+        }
+
+        function processMessage(data) {
+            if(data.type === 'error') {
+                alert(data.message);
+                return;
+            }
+
+            switch(data.type) {
+                case 'userAdded':
+                case 'userAddedFromQueue':
+                    ensureSeatExists(data.name);
+                    log(`${data.name} sentou na mesa.`);
+                    break;
+
+                case 'userRemoved':
+                    removeSeat(data.name);
+                    log(`${data.name} saiu.`);
+                    break;
+
+                case 'playerBid':
+                    ensureSeatExists(data.name);
+                    updateSeatStack(data.name, data.amount, true); 
+                    log(`${data.name} apostou $${data.amount}`);
+                    
+                    if(data.name === myName) {
+                        document.getElementById('btnReady').disabled = false;
+                        setStatus("Aguardando confirmação...");
+                    }
+                    break;
+
+                case 'userConfirmed':
+                    markSeatReady(data.name);
+                    // NOVO: Mensagem de confirmação
+                    log(`✅ ${data.name} confirmou e está pronto.`);
+                    
+                    if(data.name === myName) {
+                        document.getElementById('phase-betting').classList.add('hidden');
+                        setStatus("Esperando outros jogadores...");
+                    }
+                    break;
+
+                case 'startHand':
+                    if(data.name === 'dealer') {
+                        clearTableCards();
+                        renderCards('dealer-cards', data.cards);
+                        if(data.score) document.getElementById('dealer-score').innerText = data.score;
+                        
+                        toggleControls('none');
+                        setStatus("Jogo Iniciado!");
+                        
+                        // NOVO: Mensagem de Início de Rodada
+                        log("A RODADA COMEÇOU! Cartas na mesa.");
+                        log("--------------------------------");
+                    } else {
+                        ensureSeatExists(data.name);
+                        renderSeatCards(data.name, data.cards);
+                        updateSeatScore(data.name, data.score);
+                    }
+                    break;
+
+                case 'turn':
+                    highlightTurn(data.name);
+                    if(data.name === myName) {
+                        setStatus("SUA VEZ!");
+                        toggleControls('action');
+                        log("🔔 É a sua vez de jogar!");
+                    } else {
+                        setStatus(`Vez de ${data.name}`);
+                        toggleControls('none');
+                    }
+                    break;
+
+                case 'hit':
+                    if(data.name === 'dealer') {
+                        renderCards('dealer-cards', data.card, true);
+                        if(data.score) document.getElementById('dealer-score').innerText = data.score;
+                    } else {
+                        renderSeatCards(data.name, data.card, true);
+                        updateSeatScore(data.name, data.score);
+                        
+                        if(data.name === myName) toggleControls('action');
+                    }
+                    log(`${data.name} pediu carta.`);
+                    break;
+
+                case 'stand':
+                    log(`${data.name} parou.`);
+                    if(data.name === myName) toggleControls('none');
+                    break;
+
+                case 'showDown':
+                    if(data.name === 'dealer') {
+                        const container = document.getElementById('dealer-cards');
+                        container.innerHTML = '';
+                        renderCards('dealer-cards', data.cards);
+                        document.getElementById('dealer-score').innerText = data.score;
+                    } else {
+                        const seat = document.getElementById(`seat-${data.name}`);
+                        if(seat) {
+                            const resultEl = seat.querySelector('.seat-score');
+                            
+                            let resultText = "";
+                            let resultColor = "";
+
+                            if (data.result === "WIN") {
+                                resultText = "VENCEU!";
+                                resultColor = "#2ecc71";
+                            } else if (data.result === "PUSH") {
+                                resultText = "EMPATE";
+                                resultColor = "#f1c40f";
+                            } else {
+                                resultText = "PERDEU";
+                                resultColor = "#e74c3c";
+                            }
+
+                            resultEl.innerText = `${data.score} - ${resultText}`;
+                            resultEl.style.color = resultColor;
+                        }
+                        
+                        if(data.name === myName && data.currentStack !== undefined) {
+                            document.getElementById(`stack-${myName}`).innerText = data.currentStack;
+                            
+                            if (data.result === "WIN") setStatus("VOCÊ GANHOU! 🏆");
+                            else if (data.result === "PUSH") setStatus("EMPATE! Aposta devolvida.");
+                            else setStatus("A CASA LEVOU... ❌");
+                        }
+                    }
+                    break;
+
+                case 'gameEnded':
+                    log("Rodada finalizada.");
+                    log("⏳ Reiniciando em 6 segundos...");
+                    setTimeout(() => resetGameUI(), 6000);
+                    break;
+            }
+        }
+
+        function ensureSeatExists(playerName) {
+            const id = `seat-${playerName}`;
+            if(document.getElementById(id)) return;
+
+            const container = document.getElementById('players-container');
+            const seatDiv = document.createElement('div');
+            seatDiv.id = id;
+            seatDiv.className = 'seat';
+            if(playerName === myName) seatDiv.style.borderColor = "#f1c40f";
+
+            seatDiv.innerHTML = `
+                <div class="seat-info">
+                    <span class="seat-name">${playerName}</span>
+                    <span class="seat-stack">$<span id="stack-${playerName}">1000</span></span>
+                </div>
+                <div class="cards-row" id="cards-${playerName}"></div>
+                <div class="seat-score"></div>
+            `;
+            container.appendChild(seatDiv);
+        }
+
+        function updateSeatScore(playerName, score) {
+            if (score === undefined) return;
+            const seat = document.getElementById(`seat-${playerName}`);
+            if (seat) {
+                const scoreEl = seat.querySelector('.seat-score');
+                scoreEl.innerText = score;
+                scoreEl.style.color = "white"; 
+            }
+        }
+
+        function removeSeat(playerName) {
+            const el = document.getElementById(`seat-${playerName}`);
+            if(el) el.remove();
+        }
+
+        function renderSeatCards(playerName, cardsOrCard, append = false) {
+            renderCards(`cards-${playerName}`, cardsOrCard, append);
+        }
+
+        function highlightTurn(activeName) {
+            document.querySelectorAll('.seat').forEach(s => s.classList.remove('active-turn'));
+            if(activeName !== 'dealer') {
+                const activeSeat = document.getElementById(`seat-${activeName}`);
+                if(activeSeat) activeSeat.classList.add('active-turn');
+            }
+        }
+
+        function markSeatReady(playerName) {
+            const seat = document.getElementById(`seat-${playerName}`);
+            if(seat) {
+                seat.style.background = "rgba(46, 204, 113, 0.3)";
+            }
+        }
+
+        function renderCards(containerId, input, append = false) {
+            const container = document.getElementById(containerId);
+            if(!append) container.innerHTML = '';
+            const list = Array.isArray(input) ? input : [input];
+            list.forEach(c => {
+                const div = document.createElement('div');
+                const sIcon = suitIcons[c.suit] || c.suit;
+                const sColor = suitColor[c.suit] || 'black';
+                div.className = `card ${sColor}`;
+                div.innerText = `${c.value}${sIcon}`;
+                container.appendChild(div);
+            });
+        }
+
+        function clearTableCards() {
+            document.getElementById('dealer-cards').innerHTML = '';
+            document.getElementById('dealer-score').innerText = '';
+            document.querySelectorAll('.seat .cards-row').forEach(el => el.innerHTML = '');
+            document.querySelectorAll('.seat .seat-score').forEach(el => el.innerText = '');
+            document.querySelectorAll('.seat').forEach(s => {
+                s.classList.remove('active-turn');
+                s.style.background = "rgba(0,0,0,0.6)";
+            });
+        }
+
+        function updateSeatStack(playerName, amount, isBid) {
+            const el = document.getElementById(`stack-${playerName}`);
+            if(el) {
+                let current = parseFloat(el.innerText);
+                if(isBid) el.innerText = current - amount;
+                else el.innerText = amount;
+            }
+        }
+
+        function resetGameUI() {
+            clearTableCards();
+            toggleControls('betting');
+            setStatus("Façam suas apostas!");
+            document.getElementById('btnReady').disabled = true;
+        }
+
+        function toggleControls(mode) {
+            const betDiv = document.getElementById('phase-betting');
+            const actDiv = document.getElementById('phase-action');
+            betDiv.classList.add('hidden');
+            actDiv.classList.add('hidden');
+
+            if(mode === 'betting') betDiv.classList.remove('hidden');
+            if(mode === 'action') actDiv.classList.remove('hidden');
+        }
+
+        function placeBid() {
+            const amt = parseInt(document.getElementById('bidAmount').value);
+            if(amt > 0) socket.send(JSON.stringify({ action: "bid", amount: amt }));
+        }
+        function confirmReady() { socket.send(JSON.stringify({ action: "confirm" })); }
+        function sendAction(act) { 
+            socket.send(JSON.stringify({ action: act })); 
+            toggleControls('none'); 
+        }
+        function setStatus(msg) { document.getElementById('global-status').innerText = msg; }
+        function log(msg) {
+            const overlay = document.getElementById('log-overlay');
+            const p = document.createElement('p');
+            p.innerText = msg;
+            overlay.prepend(p);
+        }
+    </script>
+</body>
+</html>

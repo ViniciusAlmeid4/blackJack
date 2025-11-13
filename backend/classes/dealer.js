@@ -30,11 +30,15 @@ export class Dealer {
     hit(ws) {
         const card = this.pack.pullCard();
         ws.cards.push(card);
+        
+        const currentScore = this.calculateScore(ws.cards);
+
         this.broadcast(
             JSON.stringify({
                 type: "hit",
                 card: { value: card.value, suit: card.suit },
                 name: ws.name,
+                score: currentScore
             })
         );
     }

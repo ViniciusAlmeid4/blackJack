@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blackjack Multiplayer Pro</title>
     <style>
-        /* --- RESET E BASE --- */
+        
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
         body { 
             font-family: 'Segoe UI', sans-serif; 
-            background-color: #111; /* Chão escuro */
+            background-color: #111;
             background-image: radial-gradient(#222 10%, #000 90%);
             color: white; 
             height: 100vh;
@@ -22,7 +22,6 @@
         
         .hidden { display: none !important; }
 
-        /* --- TELA DE LOGIN --- */
         #login-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); z-index: 2000;
@@ -30,8 +29,7 @@
         }
         input { padding: 15px; border-radius: 30px; border: 2px solid #444; background: #222; color: white; font-size: 18px; text-align: center; outline: none;}
         input:focus { border-color: #f1c40f; }
-        
-        /* --- BOTÕES --- */
+
         button { 
             padding: 12px 30px; cursor: pointer; border-radius: 30px; border: none; 
             font-weight: bold; font-size: 14px; text-transform: uppercase; 
@@ -46,27 +44,25 @@
         .btn-red { background: linear-gradient(to bottom, #e74c3c, #c0392b); color: white; }
         .btn-gold { background: linear-gradient(to bottom, #f1c40f, #f39c12); color: #2c3e50; }
 
-        /* --- A MESA (OVAL) --- */
         #poker-table {
             width: 95%;
             max-width: 1400px;
-            height: 75vh; /* Ocupa 75% da altura da tela */
+            height: 75vh;
             background-color: #2e7d32;
-            /* Efeito de Feltro Realista */
+
             background-image: radial-gradient(50% 50% at 50% 50%, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0.1) 100%), 
                               repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.03) 10px, rgba(0,0,0,0.03) 20px);
-            border: 15px solid #5d4037; /* Borda de Madeira */
-            border-radius: 300px; /* Formato Oval */
+            border: 15px solid #5d4037; 
+            border-radius: 300px;
             box-shadow: inset 0 0 100px rgba(0,0,0,0.8), 0 20px 50px rgba(0,0,0,0.5);
             position: relative;
             display: flex;
             flex-direction: column;
-            justify-content: space-between; /* Dealer no topo, Players embaixo */
+            justify-content: space-between;
             padding: 20px;
-            margin-bottom: 80px; /* Espaço para controles */
+            margin-bottom: 80px;
         }
 
-        /* Logo Central / Status Global */
         #center-logo {
             position: absolute;
             top: 50%; left: 50%;
@@ -84,25 +80,22 @@
         }
         .table-label { font-size: 3em; font-weight: 900; color: rgba(0,0,0,0.2); letter-spacing: 5px; margin-top: -60px; display: block;}
 
-        /* Área do Dealer */
         #dealer-area {
             display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10;
         }
         .dealer-badge { background: #222; color: #aaa; padding: 4px 10px; border-radius: 10px; font-size: 0.8em; margin-bottom: 5px; border: 1px solid #555;}
 
-        /* Área dos Jogadores */
         #players-container {
             display: flex; justify-content: center; align-items: flex-end; 
             gap: 20px; flex-wrap: wrap; z-index: 10;
             min-height: 200px;
         }
 
-        /* Assento Individual */
         .seat {
             background: rgba(0,0,0,0.6);
             border-radius: 15px;
             padding: 15px;
-            width: 160px; /* Um pouco maior */
+            width: 160px;
             display: flex; flex-direction: column; align-items: center;
             border: 2px solid #444;
             transition: all 0.3s ease;
@@ -122,7 +115,6 @@
         .seat-stack { color: #2ecc71; font-weight: bold;}
         .seat-score { font-size: 0.9em; color: #ffd54f; font-weight: bold; margin-top: 5px; min-height: 20px;}
 
-        /* Cartas */
         .cards-row { display: flex; justify-content: center; height: 90px; margin-top: 5px; padding-left: 10px;}
         .card {
             background: white; color: black; 
@@ -131,7 +123,7 @@
             display: flex; justify-content: center; align-items: center;
             font-weight: bold; font-size: 18px; 
             box-shadow: -3px 0 6px rgba(0,0,0,0.4);
-            margin-left: -25px; /* Sobreposição maior */
+            margin-left: -25px;
             transition: margin 0.2s;
             position: relative;
         }
@@ -139,7 +131,6 @@
         .card:hover { margin-left: -5px; margin-right: 20px; z-index: 50; transform: translateY(-10px);} 
         .card.red { color: #c0392b; }
 
-        /* --- BARRA DE CONTROLES (FIXA EM BAIXO) --- */
         #controls-bar {
             position: fixed; bottom: 0; left: 0; width: 100%;
             background: linear-gradient(to top, #111, #222);
@@ -218,7 +209,6 @@
         let socket;
         let myName = "";
 
-        //mudar o ip conforme nova conexão http://10.1.1.67:5500/backend/index.html
         const ip = window.location.hostname
         
         const suitIcons = { "Hearts": "♥", "Diamonds": "♦", "Spades": "♠", "Clubs": "♣" };
@@ -278,7 +268,6 @@
 
                 case 'userConfirmed':
                     markSeatReady(data.name);
-                    // NOVO: Mensagem de confirmação
                     log(`✅ ${data.name} confirmou e está pronto.`);
                     
                     if(data.name === myName) {
@@ -295,8 +284,7 @@
                         
                         toggleControls('none');
                         setStatus("Jogo Iniciado!");
-                        
-                        // NOVO: Mensagem de Início de Rodada
+
                         log("A RODADA COMEÇOU! Cartas na mesa.");
                         log("--------------------------------");
                     } else {
@@ -336,7 +324,7 @@
                     if(data.name === myName) toggleControls('none');
                     break;
 
-                case 'showDown':
+                    case 'showDown':
                     if(data.name === 'dealer') {
                         const container = document.getElementById('dealer-cards');
                         container.innerHTML = '';
@@ -346,7 +334,6 @@
                         const seat = document.getElementById(`seat-${data.name}`);
                         if(seat) {
                             const resultEl = seat.querySelector('.seat-score');
-                            
                             let resultText = "";
                             let resultColor = "";
 
@@ -365,9 +352,11 @@
                             resultEl.style.color = resultColor;
                         }
                         
-                        if(data.name === myName && data.currentStack !== undefined) {
-                            document.getElementById(`stack-${myName}`).innerText = data.currentStack;
-                            
+                        if(data.currentStack !== undefined) {
+                            updateSeatStack(data.name, data.currentStack, false);
+                        }
+
+                        if(data.name === myName) {
                             if (data.result === "WIN") setStatus("VOCÊ GANHOU! 🏆");
                             else if (data.result === "PUSH") setStatus("EMPATE! Aposta devolvida.");
                             else setStatus("A CASA LEVOU... ❌");

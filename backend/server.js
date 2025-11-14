@@ -1,9 +1,51 @@
+import http from "http";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import { parse } from "url";
 import { WebSocketServer } from "ws";
 import { Table } from "./classes/table.js";
 import { Dealer } from "./classes/dealer.js";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const httpServer = http.createServer((req, res) => {
+    let filePath = path.join(__dirname, "", req.url === "/" ? "index.html" : req.url);
+
+    let ext = path.extname(filePath);
+    let contentType = "text/html";
+
+    switch (ext) {
+        case ".js":
+            contentType = "application/javascript";
+            break;
+        case ".css":
+            contentType = "text/css";
+            break;
+        case ".json":
+            contentType = "application/json";
+            break;
+    }
+
+    fs.readFile(filePath, (err, content) => {
+        if (err) {
+            res.writeHead(404);
+            res.end("File not found");
+            return;
+        }
+        res.writeHead(200, { "Content-Type": contentType });
+        res.end(content);
+    });
+});
+
+httpServer.listen(8081, () => {
+    console.log("HTTP server rodando em http://localhost:8081 - Troque localhost pelo ip do servidor para acessar por outros dispositivos");
+});
+
 const wss = new WebSocketServer({ port: 8080 });
+
+console.log("WebSocket rodando na porta 8080")
 
 const clients = new Map();
 
